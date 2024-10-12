@@ -1,4 +1,3 @@
-const http = new XMLHttpRequest();
 var data;
 var output = '';
 var style = 0;
@@ -10,35 +9,68 @@ const getQueryParamUrl = () => new URLSearchParams(window.location.search).get('
 const getDownload = () => new URLSearchParams(window.location.search).get('download') ?? false;
 const getFieldUrl = () => document.getElementById('url-field').value;
 
+
+function followRedirects(url, maxRedirects = 10) {
+  return new Promise((resolve, reject) => {
+    const http = new XMLHttpRequest();
+    let redirectCount = 0;
+
+    function makeRequest(currentUrl) {
+      http.open('GET', currentUrl);
+      //http.responseType = 'json';
+
+      http.onload = function () {
+        if (http.readyState === XMLHttpRequest.DONE) {
+          if (http.status >= 300 && http.status < 400) {
+            const redirectUrl = http.getResponseHeader('Location');
+            if (redirectUrl && redirectCount < maxRedirects) {
+              redirectCount++;
+              makeRequest(redirectUrl);
+            } else {
+              reject(new Error('Too many redirects or missing Location header'));
+            }
+          } else if (http.status === 200) {
+            resolve(http.response);
+          } else {
+            reject(new Error(`HTTP error: ${http.status}`));
+          }
+        }
+      };
+
+      http.send();
+    }
+
+    makeRequest(url);
+  });
+}
+
 function fetchData(url) {
   output = '';
 
-  http.open('GET', `${url}`);
-  http.responseType = 'json';
-  http.send();
+  followRedirects(url)
+    .then(response => {
+      data = response;
+      const post = data[0].data.children[0].data;
+      const comments = data[1].data.children;
+      displayTitle(post);
+      output += '\n\n## Comments\n\n';
+      comments.forEach(displayComment);
 
-  http.onload = function () {
-    data = http.response;
-    const post = data[0].data.children[0].data;
-    const comments = data[1].data.children;
-    displayTitle(post);
-    output += '\n\n## Comments\n\n';
-    comments.forEach(displayComment);
+      console.log('Done');
+      var ouput_display = document.getElementById('ouput-display');
+      var ouput_block = document.getElementById('ouput-block');
+      ouput_block.removeAttribute('hidden');
+      ouput_display.innerHTML = output;
 
-    console.log('Done');
-    var ouput_display = document.getElementById('ouput-display');
-    var ouput_block = document.getElementById('ouput-block');
-    ouput_block.removeAttribute('hidden');
-    ouput_display.innerHTML = output;
+      const title = output.match(/^# (.*)$/m)[1];
 
-    const title = output.match(/^# (.*)$/m)[1];
+      let filename = new Date().toISOString().replace(/[:\-\.TZ]/g, '').substring(0, 14);
+      filename += ` ${title}.md`;
+      filename = filename.replace(/[<>:"/\\|?*\x00-\x1F\x80-\x9F]/g, '_');
 
-    let filename = new Date().toISOString().replace(/[:\-\.TZ]/g, '').substring(0, 14);
-    filename += ` ${title}.md`;
-    filename = filename.replace(/[<>:"/\\|?*\x00-\x1F\x80-\x9F]/g, '_');
-
-    download(output, filename, 'text/plain');
-  };
+      download(output, filename, 'text/plain');
+    })
+    .catch(error => console.error(error));
 }
 
 function setStyle() {
