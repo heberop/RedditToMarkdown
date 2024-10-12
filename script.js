@@ -9,7 +9,6 @@ const onDocumentReady = () => {
   document.getElementById('url-field').value = getQueryParamUrl();
   if (getFieldUrl()) {
     startExport();
-    document.getElementById('a').click();
   }
 };
 
@@ -79,6 +78,7 @@ function download(text, name, type) {
   var file = new Blob([text], { type: type });
   a.href = URL.createObjectURL(file);
   a.download = name;
+  a.click();
 }
 
 function displayTitle(post) {
