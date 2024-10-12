@@ -4,9 +4,10 @@ var output = '';
 var style = 0;
 var escapeNewLine = false;
 var spaceComment = false;
+var autodownload = false;
 
-const getQueryParamUrl = () => new URLSearchParams(window.location.search).get(
-  'url') ?? null;
+const getQueryParamUrl = () => new URLSearchParams(window.location.search).get('url') ?? null;
+const getDownload = () => new URLSearchParams(window.location.search).get('download') ?? false;
 const getFieldUrl = () => document.getElementById('url-field').value;
 
 function fetchData(url) {
@@ -78,6 +79,9 @@ function download(text, name, type) {
   var file = new Blob([text], { type: type });
   a.href = URL.createObjectURL(file);
   a.download = name;
+  if (autodownload) {
+    a.click();
+  }
 }
 
 function displayTitle(post) {
@@ -138,6 +142,7 @@ function displayComment(comment, index) {
   }
 }
 
+autodownload = getDownload();
 document.getElementById('url-field').value = getQueryParamUrl();
 if (getFieldUrl()) {
   startExport();
