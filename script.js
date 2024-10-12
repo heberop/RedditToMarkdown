@@ -5,11 +5,6 @@ var style = 0;
 var escapeNewLine = false;
 var spaceComment = false;
 
-document.getElementById('url-field').value = getQueryParamUrl();
-if (getFieldUrl()) {
-  startExport();
-}
-
 const getQueryParamUrl = () => new URLSearchParams(window.location.search).get(
   'url') ?? null;
 const getFieldUrl = () => document.getElementById('url-field').value;
@@ -135,4 +130,9 @@ function displayComment(comment, index) {
       output += '\n';
     }
   }
+}
+
+document.getElementById('url-field').value = getQueryParamUrl();
+if (getFieldUrl()) {
+  startExport();
 }
