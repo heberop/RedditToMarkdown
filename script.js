@@ -13,7 +13,7 @@ const getFieldUrl = () => document.getElementById('url-field').value;
 function fetchData(url) {
   output = '';
 
-  http.open('GET', `${url}.json`);
+  http.open('GET', `${url}`);
   http.responseType = 'json';
   http.send();
 
