@@ -17,11 +17,11 @@ function followRedirects(url, maxRedirects = 10) {
 
     function makeRequest(currentUrl) {
       http.open('GET', currentUrl);
-      //http.responseType = 'json';
+      http.responseType = 'text';
 
-      http.onload = function () {
+      http.onreadystatechange = function () {
         if (http.readyState === XMLHttpRequest.DONE) {
-          if (http.status >= 300 && http.status < 400) {
+          if (http.status == 0 || http.status >= 300 && http.status < 400) {
             const redirectUrl = http.getResponseHeader('Location');
             if (redirectUrl && redirectCount < maxRedirects) {
               redirectCount++;
@@ -32,7 +32,8 @@ function followRedirects(url, maxRedirects = 10) {
           } else if (http.status === 200) {
             resolve(http.response);
           } else {
-            reject(new Error(`HTTP error: ${http.status}`));
+            //reject(new Error(`HTTP error: ${http.status}`));
+            console.log(`HTTP error: ${http.status}`);
           }
         }
       };
@@ -47,30 +48,33 @@ function followRedirects(url, maxRedirects = 10) {
 function fetchData(url) {
   output = '';
 
-  followRedirects(url)
-    .then(response => {
-      data = response;
-      const post = data[0].data.children[0].data;
-      const comments = data[1].data.children;
-      displayTitle(post);
-      output += '\n\n## Comments\n\n';
-      comments.forEach(displayComment);
+  const http = new XMLHttpRequest();
+  http.open('GET', `${url}`);
+  http.responseType = 'json';
+  http.send();
 
-      console.log('Done');
-      var ouput_display = document.getElementById('ouput-display');
-      var ouput_block = document.getElementById('ouput-block');
-      ouput_block.removeAttribute('hidden');
-      ouput_display.innerHTML = output;
+  http.onload = function () {
+    data = response;
+    const post = data[0].data.children[0].data;
+    const comments = data[1].data.children;
+    displayTitle(post);
+    output += '\n\n## Comments\n\n';
+    comments.forEach(displayComment);
 
-      const title = output.match(/^# (.*)$/m)[1];
+    console.log('Done');
+    var ouput_display = document.getElementById('ouput-display');
+    var ouput_block = document.getElementById('ouput-block');
+    ouput_block.removeAttribute('hidden');
+    ouput_display.innerHTML = output;
 
-      let filename = new Date().toISOString().replace(/[:\-\.TZ]/g, '').substring(0, 14);
-      filename += ` ${title}.md`;
-      filename = filename.replace(/[<>:"/\\|?*\x00-\x1F\x80-\x9F]/g, '_');
+    const title = output.match(/^# (.*)$/m)[1];
 
-      download(output, filename, 'text/plain');
-    })
-    .catch(error => console.error(error));
+    let filename = new Date().toISOString().replace(/[:\-\.TZ]/g, '').substring(0, 14);
+    filename += ` ${title}.md`;
+    filename = filename.replace(/[<>:"/\\|?*\x00-\x1F\x80-\x9F]/g, '_');
+
+    download(output, filename, 'text/plain');
+  };
 }
 
 function setStyle() {
