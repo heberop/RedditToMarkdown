@@ -5,12 +5,10 @@ var style = 0;
 var escapeNewLine = false;
 var spaceComment = false;
 
-const onDocumentReady = () => {
-  document.getElementById('url-field').value = getQueryParamUrl();
-  if (getFieldUrl()) {
-    startExport();
-  }
-};
+document.getElementById('url-field').value = getQueryParamUrl();
+if (getFieldUrl()) {
+  startExport();
+}
 
 const getQueryParamUrl = () => new URLSearchParams(window.location.search).get(
   'url') ?? null;
