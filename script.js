@@ -29,7 +29,14 @@ function fetchData(url) {
     var ouput_block = document.getElementById('ouput-block');
     ouput_block.removeAttribute('hidden');
     ouput_display.innerHTML = output;
-    download(output, 'output.md', 'text/plain');
+
+    const title = output.match(/^# (.*)$/m)[1];
+
+    let filename = new Date().toISOString().replace(/[:\-\.TZ]/g, '').substring(0, 14);
+    filename += ` ${title}.md`;
+    filename = filename.replace(/[<>:"/\\|?*\x00-\x1F\x80-\x9F]/g, '_');
+
+    download(output, filename, 'text/plain');
   };
 }
 
@@ -71,7 +78,6 @@ function download(text, name, type) {
   var file = new Blob([text], { type: type });
   a.href = URL.createObjectURL(file);
   a.download = name;
-  a.click();
 }
 
 function displayTitle(post) {
