@@ -17,24 +17,37 @@ function followRedirects(url, maxRedirects = 10) {
 
     function makeRequest(currentUrl) {
       http.open('GET', currentUrl);
-      http.responseType = 'text';
+      http.responseType = 'json';
 
-      http.onreadystatechange = function () {
-        if (http.readyState === XMLHttpRequest.DONE) {
-          if (http.status == 0 || http.status >= 300 && http.status < 400) {
-            const redirectUrl = http.getResponseHeader('Location');
-            if (redirectUrl && redirectCount < maxRedirects) {
-              redirectCount++;
-              makeRequest(redirectUrl);
-            } else {
-              reject(new Error('Too many redirects or missing Location header'));
-            }
-          } else if (http.status === 200) {
-            resolve(http.response);
+      http.onload = function () {
+        if (http.status >= 300 && http.status < 400) {
+          const redirectUrl = http.getResponseHeader('Location');
+          if (redirectUrl && redirectCount < maxRedirects) {
+            redirectCount++;
+            makeRequest(redirectUrl);
           } else {
-            //reject(new Error(`HTTP error: ${http.status}`));
-            console.log(`HTTP error: ${http.status}`);
+            reject(new Error('Too many redirects or missing Location header'));
           }
+        } else if (http.status === 200) {
+          resolve(http.response);
+        } else {
+          //reject(new Error(`HTTP error: ${http.status}`));
+          console.log(`HTTP error: ${http.status}`);
+        }
+      };
+
+      http.onerror = function () {
+        if (http.status >= 300 && http.status < 400) {
+          const redirectUrl = http.getResponseHeader('Location');
+          if (redirectUrl && redirectCount < maxRedirects) {
+            redirectCount++;
+            makeRequest(redirectUrl);
+          } else {
+            reject(new Error('Too many redirects or missing Location header'));
+          }
+        } else {
+          //reject(new Error('Network error or CORS issue'));
+          console.log(`HTTP error: ${http.status}`);
         }
       };
 
@@ -45,36 +58,58 @@ function followRedirects(url, maxRedirects = 10) {
   });
 }
 
+
+
 function fetchData(url) {
   output = '';
 
-  const http = new XMLHttpRequest();
-  http.open('GET', `${url}`);
-  http.responseType = 'json';
-  http.send();
+  // const http = new XMLHttpRequest();
+  // http.open('GET', `${url}`);
+  // http.responseType = 'json';
+  // http.send();
 
-  http.onload = function () {
-    data = response;
-    const post = data[0].data.children[0].data;
-    const comments = data[1].data.children;
-    displayTitle(post);
-    output += '\n\n## Comments\n\n';
-    comments.forEach(displayComment);
+  // http.onload = function () {
 
-    console.log('Done');
-    var ouput_display = document.getElementById('ouput-display');
-    var ouput_block = document.getElementById('ouput-block');
-    ouput_block.removeAttribute('hidden');
-    ouput_display.innerHTML = output;
+  fetch(url, {
+    method: 'GET',
+    redirect: 'follow',
+    mode: 'navigate'
+  })
+    .then(response => {
+      if (!response.ok) {
+        const location = response.headers.get('Location');
+        console.log('Redirecionado para:', location);
+      } else {
+        return response.json();
+      }
+    })
+    .catch(error => {
+      console.error('Erro:', error);
+    });
 
-    const title = output.match(/^# (.*)$/m)[1];
 
-    let filename = new Date().toISOString().replace(/[:\-\.TZ]/g, '').substring(0, 14);
-    filename += ` ${title}.md`;
-    filename = filename.replace(/[<>:"/\\|?*\x00-\x1F\x80-\x9F]/g, '_');
+  // followRedirects(url).then(response => {
+  //   data = response;
+  //   const post = data[0].data.children[0].data;
+  //   const comments = data[1].data.children;
+  //   displayTitle(post);
+  //   output += '\n\n## Comments\n\n';
+  //   comments.forEach(displayComment);
 
-    download(output, filename, 'text/plain');
-  };
+  //   console.log('Done');
+  //   var ouput_display = document.getElementById('ouput-display');
+  //   var ouput_block = document.getElementById('ouput-block');
+  //   ouput_block.removeAttribute('hidden');
+  //   ouput_display.innerHTML = output;
+
+  //   const title = output.match(/^# (.*)$/m)[1];
+
+  //   let filename = new Date().toISOString().replace(/[:\-\.TZ]/g, '').substring(0, 14);
+  //   filename += ` ${title}.md`;
+  //   filename = filename.replace(/[<>:"/\\|?*\x00-\x1F\x80-\x9F]/g, '_');
+
+  //   download(output, filename, 'text/plain');
+  // });
 }
 
 function setStyle() {
